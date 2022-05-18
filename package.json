@@ -1,0 +1,32 @@
+{
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.6",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "chai": "^4.3.6",
+    "ethereum-waffle": "^3.4.4",
+    "ethers": "^5.6.6",
+    "hardhat": "^2.9.5",
+    "hardhat-gas-reporter": "^1.0.8"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.6.0",
+    "dotenv": "^16.0.1"
+  },
+  "name": "nftdemo",
+  "version": "1.0.0",
+  "description": "A Demo code for NFT minting and staking",
+  "main": "hardhat.config.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fepvenancio/nftDemo.git"
+  },
+  "author": "filipeVenancio",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fepvenancio/nftDemo/issues"
+  },
+  "homepage": "https://github.com/fepvenancio/nftDemo#readme"
+}
