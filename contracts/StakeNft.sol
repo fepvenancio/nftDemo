@@ -6,16 +6,16 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import "hardhat/console.sol";
-import "../contracts/StakeWhitelist.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "./StakeWhitelist.sol";
 
-contract StakingSystem is Ownable, ERC721Holder {
+contract StakingSystem is ERC721Holder, Ownable {
     IERC721 public nft;
-    StakeWhitelist whitelist;
-
     uint256 public stakedTotal;
     uint256 public stakingStartTime;
     uint256 constant stakingTime = 300 seconds; //Time for the demo
+    bool initialised;
+    address stakeWhitelist;
     
     struct Staker {
         uint256[] tokenIds;
@@ -23,21 +23,20 @@ contract StakingSystem is Ownable, ERC721Holder {
         uint256 balance;
     }
 
-    constructor(IERC721 _nft) Ownable() {
+    constructor(IERC721 _nft) {
+        StakeWhitelist _stakeWhitelist = new StakeWhitelist();
+        stakeWhitelist = address(_stakeWhitelist);
         nft = _nft;
+        super;
     }
 
     mapping(address => Staker) public stakers;
-
     mapping(uint256 => address) public tokenOwner;
-    bool public tokensClaimable;
-    bool initialised;
 
     event Staked(address owner, uint256 amount);
     event Unstaked(address owner, uint256 amount);
 
     function initStaking() public onlyOwner {
-        //needs access control
         require(!initialised, "Already initialised");
         stakingStartTime = block.timestamp;
         initialised = true;
@@ -51,9 +50,19 @@ contract StakingSystem is Ownable, ERC721Holder {
         _stake(msg.sender, tokenId);
     }
 
+    function addOnWhitelist(address _member) public onlyOwner {
+        StakeWhitelist _stakeWhitelist = StakeWhitelist(stakeWhitelist);
+        _stakeWhitelist.addOnWhitelist(_member);
+    }
+
+    function isOnWhitelist(address _member) public view returns(bool) {
+        StakeWhitelist _stakeWhitelist = StakeWhitelist(stakeWhitelist);
+        return _stakeWhitelist.isOnWhitelist(_member);
+    }
+
     function _stake(address _user, uint256 _tokenId) internal {
         require(initialised, "Staking System: the staking has not started");
-        require(whitelist.isOnWhitelist(msg.sender), "must be a whitelisted member");
+        require(isOnWhitelist(_user), "member must be on the whitelist");
         require(nft.ownerOf(_tokenId) == _user, "member must be the owner of the token");
         Staker storage staker = stakers[_user];
 
@@ -80,13 +89,13 @@ contract StakingSystem is Ownable, ERC721Holder {
     }
 
     function _unstake(address _user, uint256 _tokenId) internal {
-        require(tokenOwner[_tokenId] == _user, "Nft Staking System: user must be the owner of the staked nft");
+        require(tokenOwner[_tokenId] == _user, "member must be the owner of the staked nft");
         Staker storage staker = stakers[_user];
         
         if (staker.tokenIds.length > 0) {
             staker.tokenIds.pop();
         }
-        
+
         staker.tokenStakingCoolDown[_tokenId] = 0;
         delete tokenOwner[_tokenId];
 

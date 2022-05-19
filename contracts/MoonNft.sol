@@ -16,10 +16,14 @@ contract MoonNFT is ERC721 {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
+    string public collectionName;
+    string public collectionSymbol;
 
     mapping(address => uint) whilelist;
 
     constructor() ERC721("2 THE MOON", "M00N") {
+        collectionName = name();
+        collectionSymbol = symbol();
     }
 
     function _baseURI() internal pure override returns (string memory) {
