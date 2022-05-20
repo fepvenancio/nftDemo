@@ -39,6 +39,21 @@ contract StakingSystem is ERC721Holder, Ownable {
         initialised = true;
     }
 
+    function stopStaking() public onlyOwner {
+        require(initialised, "Not initialized");
+        initialised = false;
+    }
+
+    function stopStakingUnstake(uint256 _tokenId) public onlyOwner {
+        stopStaking();
+        _unstake(msg.sender, _tokenId);
+    }
+
+    function stopStakingUnstakeAll(uint256[] memory tokenIds) public onlyOwner {
+        stopStaking();
+        unstakeBatch(tokenIds);
+    }
+
     function getStakedTokens(address _user) public view returns (uint256[] memory tokenIds) {
         return stakers[_user].tokenIds;
     }
