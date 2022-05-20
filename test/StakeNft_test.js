@@ -33,20 +33,16 @@ describe('NFT Staking', function () {
     await expect(moonNftContract.connect(addr1).setApprovalForAll(stakingNftContract.address,true))
       .to.emit(moonNftContract, "ApprovalForAll")
       .withArgs(account1, stakingNftContract.address, true);
-
-    const isWhitelisted = await stakingNftContract.isOnWhitelist(account1);
-    console.log(isWhitelisted);
   
     await stakingNftContract.connect(owner).addOnWhitelist(account1);
-      
-    const isWhitelisted2 = await stakingNftContract.isOnWhitelist(account1);
-    console.log(isWhitelisted2);
-     
+  
     await expect(stakingNftContract.connect(addr1).stake(0))
       .to.emit(stakingNftContract, "Staked")
       .withArgs(account1, 0);
-      
-    const getStakedTokens = await stakingNftContract.getStakedTokens(account1);
-    console.log(getStakedTokens.toString());
+
+    await expect(stakingNftContract.connect(addr1).unstake(0))
+      .to.emit(stakingNftContract, "Unstaked")
+      .withArgs(account1, 0);
+    
   });
 });
