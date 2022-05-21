@@ -5,12 +5,15 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "./StakeWhitelist.sol";
+import "hardhat/console.sol";
 
 contract StakingSystem is ERC721Holder, Ownable {
     IERC721 public nft;
     uint256 public stakedTotal;
     uint256 public stakingStartTime;
     uint256 constant stakingTime = 300 seconds; //Time for the demo
+    address[] public arrGetUsersAddress;
+
     bool initialised;
     address stakeWhitelist;
     
@@ -33,35 +36,6 @@ contract StakingSystem is ERC721Holder, Ownable {
     event Staked(address owner, uint256 amount);
     event Unstaked(address owner, uint256 amount);
 
-    function initStaking() public onlyOwner {
-        require(!initialised, "Already initialised");
-        stakingStartTime = block.timestamp;
-        initialised = true;
-    }
-
-    function stopStaking() public onlyOwner {
-        require(initialised, "Not initialized");
-        initialised = false;
-    }
-
-    function stopStakingUnstake(uint256 _tokenId) public onlyOwner {
-        stopStaking();
-        _unstake(msg.sender, _tokenId);
-    }
-
-    function stopStakingUnstakeAll(uint256[] memory tokenIds) public onlyOwner {
-        stopStaking();
-        unstakeBatch(tokenIds);
-    }
-
-    function getStakedTokens(address _user) public view returns (uint256[] memory tokenIds) {
-        return stakers[_user].tokenIds;
-    }
-
-    function stake(uint256 tokenId) public {
-        _stake(msg.sender, tokenId);
-    }
-
     function addOnWhitelist(address _member) public onlyOwner {
         StakeWhitelist _stakeWhitelist = StakeWhitelist(stakeWhitelist);
         _stakeWhitelist.addOnWhitelist(_member);
@@ -72,14 +46,29 @@ contract StakingSystem is ERC721Holder, Ownable {
         return _stakeWhitelist.isOnWhitelist(_member);
     }
 
+    function initStaking() public onlyOwner {
+        require(!initialised, "Already initialised");
+        stakingStartTime = block.timestamp;
+        initialised = true;
+    }
+
+    function getStakedTokens(address _user) public view returns (uint256[] memory tokenIds) {
+        return stakers[_user].tokenIds;
+    }
+
+    function stake(uint256 tokenId) public {
+        _stake(msg.sender, tokenId);
+    }
+
     function _stake(address _user, uint256 _tokenId) internal {
         require(initialised, "Staking System: the staking has not started");
         require(isOnWhitelist(_user), "member must be on the whitelist");
         require(nft.ownerOf(_tokenId) == _user, "member must be the owner of the token");
+        arrGetUsersAddress.push(_user);
         Staker storage staker = stakers[_user];
-
         staker.tokenIds.push(_tokenId);
         staker.tokenStakingCoolDown[_tokenId] = block.timestamp;
+        staker.balance += 1;
         tokenOwner[_tokenId] = _user;
         nft.approve(address(this), _tokenId);
         nft.safeTransferFrom(_user, address(this), _tokenId);
@@ -88,14 +77,33 @@ contract StakingSystem is ERC721Holder, Ownable {
         stakedTotal++;
     }
 
+    function stopStaking() public onlyOwner {
+        require(initialised, "Not initialized");
+        initialised = false;
+    }
+
+    function stopStakingUnstake(address _user, uint256 _tokenId) public onlyOwner {
+        require(initialised, "staking needs to be initialized");
+        stopStaking();
+        _unstake(_user, _tokenId);
+    }
+
+    function stopStakingUnstakeAll() public onlyOwner {
+        require(initialised, "staking needs to be initialized");
+        stopStaking();
+        unstakeAll();
+    }
+
     function unstake(uint256 _tokenId) public {
         _unstake(msg.sender, _tokenId);
     }
 
-    function unstakeBatch(uint256[] memory tokenIds) public onlyOwner {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (tokenOwner[tokenIds[i]] == msg.sender) {
-                _unstake(msg.sender, tokenIds[i]);
+    function unstakeAll() public onlyOwner {
+        for(uint256 i = 0; i < arrGetUsersAddress.length; i++) {
+            uint256[] memory _tokenIds = getStakedTokens(arrGetUsersAddress[i]);
+            uint256 tokenIdsLength = _tokenIds.length;
+            for(uint256 j = 0; j < tokenIdsLength; j++) {
+                _unstake(arrGetUsersAddress[i], _tokenIds[j]);
             }
         }
     }
@@ -109,8 +117,8 @@ contract StakingSystem is ERC721Holder, Ownable {
         }
 
         staker.tokenStakingCoolDown[_tokenId] = 0;
+        staker.balance -= 1;
         delete tokenOwner[_tokenId];
-
         nft.safeTransferFrom(address(this), _user, _tokenId);
 
         emit Unstaked(_user, _tokenId);

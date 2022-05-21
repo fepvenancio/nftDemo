@@ -7,9 +7,6 @@ contract StakeWhitelist {
     event Whitelisted(address member);
     mapping (address => bool) whitelist;
 
-    constructor() {
-    }
-
     function isOnWhitelist(address _whitelisted) public view returns(bool) {
         return whitelist[_whitelisted];
     }

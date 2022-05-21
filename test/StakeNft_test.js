@@ -1,4 +1,4 @@
-const { expect } = require("chai");
+const { expect, assert } = require("chai");
 const { ethers } = require("hardhat");
 
 describe('NFT Staking', function () {
@@ -27,6 +27,18 @@ describe('NFT Staking', function () {
     await expect(moonNftContract.safeMint(account1))
       .to.emit(moonNftContract, "Transfer")
       .withArgs(nullAddress, account1, 0);
+    
+    await expect(moonNftContract.safeMint(account1))
+      .to.emit(moonNftContract, "Transfer")
+      .withArgs(nullAddress, account1, 1);
+
+    await expect(moonNftContract.safeMint(account1))
+      .to.emit(moonNftContract, "Transfer")
+      .withArgs(nullAddress, account1, 2);
+    
+      await expect(moonNftContract.safeMint(account1))
+      .to.emit(moonNftContract, "Transfer")
+      .withArgs(nullAddress, account1, 3);
      
     await stakingNftContract.connect(owner).initStaking();
 
@@ -39,10 +51,37 @@ describe('NFT Staking', function () {
     await expect(stakingNftContract.connect(addr1).stake(0))
       .to.emit(stakingNftContract, "Staked")
       .withArgs(account1, 0);
+    
+    await expect(stakingNftContract.connect(addr1).stake(1))
+      .to.emit(stakingNftContract, "Staked")
+      .withArgs(account1, 1);
 
     await expect(stakingNftContract.connect(addr1).unstake(0))
       .to.emit(stakingNftContract, "Unstaked")
       .withArgs(account1, 0);
     
+    await expect(stakingNftContract.connect(owner).stopStakingUnstake(account1, 1))
+      .to.emit(stakingNftContract, "Unstaked")
+      .withArgs(account1, 1);
+
+    await stakingNftContract.connect(owner).initStaking();
+
+    await expect(stakingNftContract.connect(addr1).stake(2))
+      .to.emit(stakingNftContract, "Staked")
+      .withArgs(account1, 2);
+    
+    await expect(stakingNftContract.connect(addr1).stake(3))
+      .to.emit(stakingNftContract, "Staked")
+      .withArgs(account1, 3);
+
+    const stakedTokens1 = await stakingNftContract.getStakedTokens(account1);
+    assert.equal(stakedTokens1.length, 2);
+
+    await expect(stakingNftContract.stopStakingUnstakeAll())
+      .to.emit(stakingNftContract, "Unstaked")
+      .withArgs(account1, 2);
+
+      const stakedTokens2 = await stakingNftContract.getStakedTokens(account1);
+      assert.equal(stakedTokens2.length, 0);
   });
 });
