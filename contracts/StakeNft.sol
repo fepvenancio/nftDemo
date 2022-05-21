@@ -108,6 +108,14 @@ contract StakingSystem is ERC721Holder, Ownable {
         }
     }
 
+    function unstakeBatch(uint256[] memory tokenIds) public onlyOwner {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            if (tokenOwner[tokenIds[i]] == msg.sender) {
+                _unstake(msg.sender, tokenIds[i]);
+            }
+        }
+    }
+
     function _unstake(address _user, uint256 _tokenId) internal {
         require(tokenOwner[_tokenId] == _user, "member must be the owner of the staked nft");
         Staker storage staker = stakers[_user];
